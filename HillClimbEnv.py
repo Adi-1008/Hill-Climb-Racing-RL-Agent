@@ -27,8 +27,6 @@ class HillClimbEnv(gym.Env):
             raise FileNotFoundError(f"Missing {template_path}! Please create it using the Snipping Tool.")
         self.game_over_template = cv2.imread(template_path, cv2.IMREAD_GRAYSCALE)
         
-        # --- USER CONFIGURABLE COORDINATES ---
-        # Update these with the X, Y coordinates you found using the helper script
         self.screen_center_x = 1098
         self.screen_center_y = 654
         self.start_button_x = 1500
@@ -38,26 +36,25 @@ class HillClimbEnv(gym.Env):
         # 1. Execute Action
         if action == 1:
             pydirectinput.keyDown('right')
-            time.sleep(0.1) # Shorter tap for finer control
+            time.sleep(0.1) 
             pydirectinput.keyUp('right')
         elif action == 2:
             pydirectinput.keyDown('left')
             time.sleep(0.1)
             pydirectinput.keyUp('left')
         else:
-            time.sleep(0.1) # Idle time
+            time.sleep(0.1) 
 
         # 2. Get the new observation
         next_state = self._get_observation()
 
-        # 3. Check if we crashed
         done = self._check_game_over()
         
         # 4. Calculate Reward
         if done:
-            reward = -100.0 # Huge penalty for breaking the driver's neck
+            reward = -100.0 
         else:
-            reward = 1.0    # +1 for every frame we stay alive and moving
+            reward = 1.0   
 
         truncated = False
         
@@ -67,33 +64,30 @@ class HillClimbEnv(gym.Env):
         super().reset(seed=seed)
         print("\n--- CRASH DETECTED: Resetting Environment ---")
         
-        # 1. Click screen center to skip the stats summary
-        pydirectinput.click(self.screen_center_x, self.screen_center_y)
-        time.sleep(2) # Wait for transition to lobby
         
-        # 2. Click the 'Start' button in the lobby
+        pydirectinput.click(self.screen_center_x, self.screen_center_y)
+        time.sleep(2)
+        
         pydirectinput.click(self.start_button_x, self.start_button_y)
-        time.sleep(2) # Wait for level to fade in
+        time.sleep(2)
         
         print("--- Ready for new episode ---\n")
         return self._get_observation(), {}
 
     def _get_observation(self):
-        """Captures the screen, converts to grayscale, and resizes for the AI."""
+        
         screenshot = np.array(self.sct.grab(self.monitor))
         gray = cv2.cvtColor(screenshot, cv2.COLOR_BGRA2GRAY)
         resized = cv2.resize(gray, (84, 84))
         return np.expand_dims(resized, axis=-1)
 
     def _check_game_over(self):
-        """Scans the current screen for the game over template."""
+        
         screenshot = np.array(self.sct.grab(self.monitor))
         frame = cv2.cvtColor(screenshot, cv2.COLOR_BGRA2GRAY)
         
-        # Match the template
         res = cv2.matchTemplate(frame, self.game_over_template, cv2.TM_CCOEFF_NORMED)
         
-        # 80% confidence threshold
         threshold = 0.80 
         loc = np.where(res >= threshold)
         
@@ -101,9 +95,7 @@ class HillClimbEnv(gym.Env):
             return True
         return False
 
-# ==========================================
-# TEST LOOP
-# ==========================================
+# just a testing loop
 if __name__ == "__main__":
     print("Initializing Hill Climb Racing Environment Test...")
     env = HillClimbEnv()
@@ -118,7 +110,7 @@ if __name__ == "__main__":
         done = False
         
         while not done:
-            # For this test, we just hold the gas (action 1) until we die
+            
             next_state, reward, done, _, _ = env.step(1)
             
     print("Test Complete! Auto-reset works perfectly.")
